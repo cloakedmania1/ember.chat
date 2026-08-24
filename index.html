@@ -801,7 +801,7 @@ const I18N={tr:{
  leftChan:'Ayrıldın.',connOff:'Bağlantı kapalı.',cleared:'Sohbet temizlendi.',
  chatEmpty:'Sohbet zaten boş',anonHint:'Anonim moddasın — yazmak için ⚙ Ayarlar\'dan token ekle',
  sayTo:'#{0} sohbetine yaz',startHint:'Kanal adı yaz ve Bağlan\'a bas. 📇 Kanallar\'dan kayıtlılara geçebilirsin.',
- badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',
+ badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',subUnlocked:'Tier {0} abonesin — {1} emote açık',subNone:'abone değilsin — kanal emoteleri kilitli',
  chanEmotes:'{0} kanal emotesi{1}',subTier:' · Tier {0} abonesin',notSub:' · abone değilsin',
  noChanEmotes:'bu kanalın özel emotesi yok',emotesFail:'kanal emoteleri alınamadı',
  tokenNeeded:'kanal emoteleri için ⚙ Ayarlar\'dan token gerekiyor',idFail:'kanal kimliği çözülemedi',
@@ -860,7 +860,7 @@ const I18N={tr:{
  leftChan:'Left the channel.',connOff:'Disconnected.',cleared:'Chat cleared.',
  chatEmpty:'Chat is already empty',anonHint:'Anonymous mode — add a token in ⚙ Settings to type',
  sayTo:'Message #{0}',startHint:'Type a channel and hit Connect. 📇 Channels switches between saved ones.',
- badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',
+ badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',subUnlocked:'Tier {0} sub — {1} emotes unlocked',subNone:'not subscribed — channel emotes are locked',
  chanEmotes:'{0} channel emotes{1}',subTier:' · you are Tier {0}',notSub:' · not subscribed',
  noChanEmotes:'this channel has no custom emotes',emotesFail:'could not load channel emotes',
  tokenNeeded:'channel emotes need a token — see ⚙ Settings',idFail:'could not resolve channel id',
@@ -1028,7 +1028,7 @@ async function firstOk(urls){
 function putBadges(d){
   let n=0;
   const add=(set,ver,url,title)=>{ if(!url)return; BADGES[set+'/'+ver]={url,title:title||set}; n++; };
-  if(d&&d.badge_sets){                       // badges.twitch.tv biçimi
+  if(d&&d.badge_sets){                       // eski biçim
     Object.entries(d.badge_sets).forEach(([set,v])=>
       Object.entries(v.versions||{}).forEach(([ver,b])=>
         add(set,ver,b.image_url_2x||b.image_url_1x,b.title)));
@@ -1043,16 +1043,11 @@ function putBadges(d){
   return n;
 }
 async function loadBadges(id){
-  let ng=0,nc=0,src='';
-  // 1) resmî uç (token varsa) — HTTPS'te CORS sorunu yok
-  if(await ensureHelix()){
-    try{ng=putBadges(await helix('chat/badges/global'));src='helix';}catch(e){}
-    if(id){try{nc=putBadges(await helix('chat/badges?broadcaster_id='+id));src='helix';}catch(e){}}
-  }
-  // 2) eski açık uç (tokensizken)
-  if(!ng){try{ng=putBadges(await j('https://badges.twitch.tv/v1/badges/global/display'));src='legacy';}catch(e){}}
-  if(!nc&&id){try{nc=putBadges(await j('https://badges.twitch.tv/v1/badges/channels/'+id+'/display'));src=src||'legacy';}catch(e){}}
-  info(ng+nc ? T('badgeInfo',ng,nc)+' ('+src+')' : T('badgeFail'));
+  if(!(await ensureHelix()))return;          // rozetler yalnızca resmî uçtan
+  let ng=0,nc=0;
+  try{ng=putBadges(await helix('chat/badges/global'));}catch(e){}
+  if(id){try{nc=putBadges(await helix('chat/badges?broadcaster_id='+id));}catch(e){}}
+  info(ng+nc?T('badgeInfo',ng,nc):T('badgeFail'));
   repaintBadges();meBadge();
 }
 // zaten çizilmiş mesajların çiplerini gerçek rozetle değiştir
@@ -1096,7 +1091,7 @@ async function loadSubEmotes(login,id){
         tier: type==='subscriptions' ? (t>=3000?3:t>=2000?2:1) : 0});
     });
     syncSubEmotes();
-    info(SUB.size?T('chanEmotes',SUB.size,myTier?T('subTier',myTier):T('notSub')):T('noChanEmotes'));
+    info(SUB.size?T('chanEmotes',SUB.size,''):T('noChanEmotes'));
   }catch(e){
     info(T('emotesFail'),e===401);
   }
@@ -1132,7 +1127,7 @@ function connect(name){
   $('chan').value=ch;
   chat.innerHTML='';EMO.clear();recent.length=0;
   info(T('loadingEmotes',ch));
-  myTier=0;myMonths=0;myBadgeTag='';SUB.clear();
+  myTier=0;myMonths=0;myBadgeTag='';lastTier=-1;SUB.clear();
   loadEmotes(ch);loadAvatar(ch);
   const tok=$('tok').value.trim(), nk=$('nick').value.trim().toLowerCase();
   me=(tok&&nk)?nk:'';
@@ -1179,6 +1174,11 @@ function route(line){
       myMonths=mo?+mo[1]:0;
       myBadgeTag=b;
       syncSubEmotes();meBadge();subTabLabel();
+      if(SUB.size&&myTier!==lastTier){
+        lastTier=myTier;
+        const open=[...SUB.values()].filter(v=>myTier>=v.tier).length;
+        info(myTier?T('subUnlocked',myTier,open):T('subNone'));
+      }
       if($('pick').classList.contains('open')&&pfilter==='sub')drawPick();
       break;}
     case 'CLEARCHAT':{const t=trail(m.args);
@@ -1837,7 +1837,7 @@ async function setIdentity(){
 }
 $('nick').addEventListener('change',setIdentity);
 $('nick').addEventListener('blur',setIdentity);
-let myBadgeTag='';
+let myBadgeTag='',lastTier=-1;
 function meBadge(){
   const box=$('meSub');if(!box)return;
   if(!live||!myTier){box.innerHTML='';box.title='';return;}
