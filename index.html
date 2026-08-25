@@ -324,6 +324,7 @@ body.msn #pgrid{background:#fff;margin:0 5px 5px;border:1px solid #7f9db9}
 .pe:hover{background:rgba(255,255,255,.07)}
 body.msn .pe:hover{background:#e2ecf9}
 .pe img{max-height:32px;max-width:100%}
+.sentinel{grid-column:1/-1;height:28px;line-height:28px}
 .pe.lock{position:relative}
 .pe.lock img{filter:grayscale(1) brightness(.75);opacity:.55}
 .pe.lock::after{content:'🔒';position:absolute;right:2px;bottom:1px;font-size:11px;
@@ -731,6 +732,8 @@ body.msn .ec-img{background:repeating-conic-gradient(#0000000d 0 25%,transparent
     <button data-f="BTTV" aria-pressed="false">BTTV</button>
     <button data-f="7TV" aria-pressed="false">7TV</button>
     <button data-f="FFZ" aria-pressed="false">FFZ</button>
+    <button data-f="TW" aria-pressed="false" data-t="fTwitch">Twitch</button>
+    <button data-f="mine" aria-pressed="false" data-t="fMine">Kazanılmış</button>
     <button data-f="sub" aria-pressed="false">kanal 🔒</button>
     <button data-f="emoji" aria-pressed="false" data-t="fEmoji">emoji</button>
   </div>
@@ -801,7 +804,7 @@ const I18N={tr:{
  leftChan:'Ayrıldın.',connOff:'Bağlantı kapalı.',cleared:'Sohbet temizlendi.',
  chatEmpty:'Sohbet zaten boş',anonHint:'Anonim moddasın — yazmak için ⚙ Ayarlar\'dan token ekle',
  sayTo:'#{0} sohbetine yaz',startHint:'Kanal adı yaz ve Bağlan\'a bas. 📇 Kanallar\'dan kayıtlılara geçebilirsin.',
- badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',subUnlocked:'Tier {0} abonesin — {1} emote açık',subNone:'abone değilsin — kanal emoteleri kilitli',
+ badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',fTwitch:'Twitch',fMine:'Kazanılmış',needScope:'Bu liste için token\'a user:read:emotes izni eklemen gerekiyor.',mineFail:'Emote listen alınamadı.',mineNone:'Kazanılmış emote bulunamadı.',subUnlocked:'Tier {0} abonesin — {1} emote açık',subNone:'abone değilsin — kanal emoteleri kilitli',
  chanEmotes:'{0} kanal emotesi{1}',subTier:' · Tier {0} abonesin',notSub:' · abone değilsin',
  noChanEmotes:'bu kanalın özel emotesi yok',emotesFail:'kanal emoteleri alınamadı',
  tokenNeeded:'kanal emoteleri için ⚙ Ayarlar\'dan token gerekiyor',idFail:'kanal kimliği çözülemedi',
@@ -860,7 +863,7 @@ const I18N={tr:{
  leftChan:'Left the channel.',connOff:'Disconnected.',cleared:'Chat cleared.',
  chatEmpty:'Chat is already empty',anonHint:'Anonymous mode — add a token in ⚙ Settings to type',
  sayTo:'Message #{0}',startHint:'Type a channel and hit Connect. 📇 Channels switches between saved ones.',
- badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',subUnlocked:'Tier {0} sub — {1} emotes unlocked',subNone:'not subscribed — channel emotes are locked',
+ badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',fTwitch:'Twitch',fMine:'Unlocked',needScope:'This list needs the user:read:emotes scope on your token.',mineFail:'Could not load your emotes.',mineNone:'No unlocked emotes found.',subUnlocked:'Tier {0} sub — {1} emotes unlocked',subNone:'not subscribed — channel emotes are locked',
  chanEmotes:'{0} channel emotes{1}',subTier:' · you are Tier {0}',notSub:' · not subscribed',
  noChanEmotes:'this channel has no custom emotes',emotesFail:'could not load channel emotes',
  tokenNeeded:'channel emotes need a token — see ⚙ Settings',idFail:'could not resolve channel id',
@@ -900,12 +903,12 @@ function T(k,...a){
   return s;
 }
 const HELP={tr:{
- token:'<b>Token nedir?</b><br>Sohbete yazabilmek için Twitch\'in sana verdiği anahtar. <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a> adresinden <b>chat:read + chat:edit</b> izinleriyle al. <b>Doğrula</b>\'ya basınca hesap Twitch\'e sorulur ve kullanıcı adı kendiliğinden dolar. Token yalnızca bu tarayıcıda saklanır.',
+ token:'<b>Token nedir?</b><br>Twitch\'in sana verdiği anahtar; uygulama onunla senin adına sohbete bağlanır. <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a> adresinden alabilirsin. <br><br><b>İzinler</b><br>• <b>chat:read</b> — sohbeti okumak<br>• <b>chat:edit</b> — mesaj yazmak<br>• <b>user:read:emotes</b> — <i>Kazanılmış</i> sekmesi: hype train, bits ve tüm abonelik emotelerin<br><br>İlk ikisi zorunlu, üçüncüsü isteğe bağlı. <b>Doğrula</b>\'ya basınca hesap Twitch\'e sorulur, kullanıcı adın kendiliğinden dolar ve eksik izin varsa söylenir.<br><br><b>Token neyi açar?</b><br>Kanalın abone emoteleri, rozetler ve Twitch global emoteleri yalnızca token varken gelir — Twitch bunları tokensiz vermiyor. BTTV, 7TV, FFZ emoteleri ve sohbeti okumak tokensiz de çalışır.<br><br>Token yalnızca bu tarayıcıda saklanır, hiçbir sunucuya gönderilmez. İstediğin an Twitch ayarlarından iptal edebilirsin.',
  nudge:'<b>Dürtme</b><br>Biri sana <b>@</b> ile yazdığında MSN\'in dürtme sesi çalar ve pencere sarsılır. İkisini ayrı ayrı kapatabilirsin. Normal mesajlarda klasik bildirim sesi kullanılır.',
  fsadj:'<b>Klavye düzeltmesi</b><br>Tam ekranda pencere klavyeye kadar inmiyorsa buradan artır. HTTPS üzerinden (GitHub Pages, ana ekrana eklenmiş uygulama) açtığında gerekmez — tarayıcı klavye boyunu doğru bildirir.',
  font:'<b>Yazı tipi</b><br>W95FA, Windows 95 arayüz fontunun açık kopyasıdır ve dosyanın içine gömülüdür, internet istemez. Yalnız fontta <b>ğ ş ı</b> harfleri yok; o harfler otomatik olarak yedek fonta düşer.'
 },en:{
- token:'<b>What is a token?</b><br>A key Twitch gives you so the app can send messages as you. Get one at <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a> with <b>chat:read + chat:edit</b> scopes. <b>Verify</b> asks Twitch and fills your username automatically. The token is stored only in this browser.',
+ token:'<b>What is a token?</b><br>A key Twitch gives you so the app can join chat as you. Get one at <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a>.<br><br><b>Scopes</b><br>• <b>chat:read</b> — read chat<br>• <b>chat:edit</b> — send messages<br>• <b>user:read:emotes</b> — the <i>Unlocked</i> tab: hype train, bits and every sub emote you own<br><br>The first two are required, the third is optional. <b>Verify</b> asks Twitch, fills your username automatically and tells you if a scope is missing.<br><br><b>What does the token unlock?</b><br>Channel sub emotes, badges and Twitch global emotes only load with a token — Twitch does not serve them anonymously. BTTV, 7TV, FFZ emotes and reading chat work without one.<br><br>The token is stored only in this browser and never sent to any server. You can revoke it any time from your Twitch settings.',
  nudge:'<b>Nudge</b><br>When someone mentions you with <b>@</b>, the MSN nudge sound plays and the window shakes. Both can be turned off separately. Regular notifications use the classic message sound.',
  fsadj:'<b>Keyboard offset</b><br>If the window does not reach down to the keyboard in fullscreen, raise this. Not needed over HTTPS (GitHub Pages, or installed to the home screen) — the browser reports the keyboard size correctly there.',
  font:'<b>Fonts</b><br>W95FA is an open recreation of the Windows 95 UI font, embedded in the file so it works offline. System fonts (Tahoma, Verdana, Trebuchet) look right on Windows but fall back to the device font on Android; the web fonts render the same everywhere.'
@@ -980,7 +983,7 @@ async function twitchId(n){
 async function loadEmotes(name){
   EMO.clear();
   const id=await twitchId(name), T=[];
-  loadBadges(id);loadSubEmotes(name,id);
+  loadBadges(id);loadSubEmotes(name,id);loadTwitchGlobal();loadMyEmotes();
   T.push(j('https://api.betterttv.net/3/cached/emotes/global').then(l=>{
     l.forEach(e=>add(e.code,bttv(e.id,1),bttv(e.id,3),BTTV_ZW.has(e.code),'BTTV'));return 'BTTV global '+l.length;}));
   if(id)T.push(j('https://api.betterttv.net/3/cached/users/twitch/'+id).then(d=>{
@@ -998,7 +1001,7 @@ async function loadEmotes(name){
 }
 
 /* ── Twitch resmî API (token varsa) ─────── */
-let clientId='', tokRaw='';
+let clientId='', tokRaw='', myId='';
 function helixReady(){return !!(clientId&&tokRaw);}
 async function helix(path){
   const r=await fetch('https://api.twitch.tv/helix/'+path,
@@ -1014,7 +1017,7 @@ async function ensureHelix(){
   try{
     const d=await(await fetch('https://id.twitch.tv/oauth2/validate',
       {headers:{Authorization:'OAuth '+raw}})).json();
-    if(d&&d.client_id){clientId=d.client_id;tokRaw=raw;return true;}
+    if(d&&d.client_id){clientId=d.client_id;tokRaw=raw;myId=d.user_id||myId;return true;}
   }catch(e){}
   return false;
 }
@@ -1059,7 +1062,8 @@ function repaintBadges(){
 }
 
 /* ── kanalın abone emoteleri ─────────────── */
-const SUB=new Map();
+const SUB=new Map(),TWG=new Map(),MINE=new Map();
+let mineErr='';
 let myTier=0,myMonths=0;
 const twEmo=(id,s)=>`https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/${s}`;
 function collectEmotes(d){
@@ -1074,6 +1078,41 @@ function collectEmotes(d){
     if(Array.isArray(d.emoteSets)) d.emoteSets.forEach(s=>push(s.emotes));
   }
   return out;
+}
+// Twitch global emoteleri
+async function refreshPickIfOpen(){if($('pick').classList.contains('open'))drawPick();}
+async function loadTwitchGlobal(){
+  TWG.clear();
+  if(!(await ensureHelix()))return;
+  try{
+    const d=await helix('chat/emotes/global');
+    (d.data||[]).forEach(e=>{
+      const fmt=(e.format||[]).includes('animated')?'animated':'static';
+      const u=s=>`https://static-cdn.jtvnw.net/emoticons/v2/${e.id}/${fmt}/dark/${s}`;
+      TWG.set(e.name,{url:u('2.0'),big:u('3.0'),src:'Twitch'});
+      if(!EMO.has(e.name))EMO.set(e.name,{url:u('2.0'),big:u('3.0'),zw:false,src:'Twitch'});
+    });
+  }catch(e){}
+  refreshPickIfOpen();
+}
+// hesabının açtığı emoteler (abonelik, hype train, bits…)
+async function loadMyEmotes(){
+  MINE.clear();mineErr='';
+  if(!(await ensureHelix())||!myId){mineErr='token';return;}
+  try{
+    let after='',guard=0;
+    do{
+      const d=await helix('chat/emotes/user?user_id='+myId+(after?'&after='+after:''));
+      (d.data||[]).forEach(e=>{
+        const fmt=(e.format||[]).includes('animated')?'animated':'static';
+        const u=s=>`https://static-cdn.jtvnw.net/emoticons/v2/${e.id}/${fmt}/dark/${s}`;
+        MINE.set(e.name,{url:u('2.0'),big:u('3.0'),src:'Mine',kind:String(e.emote_type||'')});
+        if(!EMO.has(e.name))EMO.set(e.name,{url:u('2.0'),big:u('3.0'),zw:false,src:'Mine'});
+      });
+      after=(d.pagination&&d.pagination.cursor)||'';
+    }while(after&&++guard<8);
+  }catch(e){ mineErr=(e===401||e===403)?'scope':'net'; }
+  refreshPickIfOpen();
 }
 async function loadSubEmotes(login,id){
   SUB.clear();
@@ -1648,7 +1687,7 @@ $('verify').onclick=async()=>{
     if(r.status===401){st.className='bad';st.textContent=T('tokBad');return;}
     const d=await r.json();
     if(!d.login){st.className='bad';st.textContent=T('tokApp');return;}
-    if(d.client_id){clientId=d.client_id;tokRaw=raw;}
+    if(d.client_id){clientId=d.client_id;tokRaw=raw;myId=d.user_id||'';}
     const need=['chat:read','chat:edit'].filter(s=>!(d.scopes||[]).includes(s));
     $('nick').value=d.login;setIdentity();
     const days=Math.round((d.expires_in||0)/86400);
@@ -1677,31 +1716,62 @@ function closeSide(){
 $('psearch').addEventListener('input',drawPick);
 $('pfilter').addEventListener('click',e=>{const b=e.target.closest('button[data-f]');if(!b)return;
   pfilter=b.dataset.f;$('pfilter').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));drawPick();});
+let pendList=[],pendI=0,pendLock=false;
+function peBtn(k,v,lock,tierLbl){
+  return `<button class="pe${lock?' lock':''}" data-c="${esc(k)}"${lock?` data-lock="1" data-tier="${esc(tierLbl)}"`:''}`
+    +` title="${esc(k)}${tierLbl?' · '+tierLbl:(v.src?' · '+v.src:'')}"><img loading="lazy" decoding="async" src="${v.url}" alt="${esc(k)}"></button>`;
+}
+function renderChunk(){
+  const g=$('pgrid'),n=180;
+  const part=pendList.slice(pendI,pendI+n);
+  if(!part.length)return;
+  const sent=g.querySelector('.sentinel'); if(sent)sent.remove();
+  g.insertAdjacentHTML('beforeend',part.map(x=>x.html).join(''));
+  pendI+=part.length;
+  if(pendI<pendList.length){
+    g.insertAdjacentHTML('beforeend','<div class="sentinel pmsg">…</div>');
+    const s=g.querySelector('.sentinel');
+    if(pickObs)pickObs.observe(s);
+  }
+}
+let pickObs=null;
+if('IntersectionObserver' in window){
+  pickObs=new IntersectionObserver(es=>{
+    if(es.some(e=>e.isIntersecting)&&!pendLock){pendLock=true;renderChunk();pendLock=false;}
+  },{root:null,rootMargin:'200px'});
+}
+function startList(items){
+  const g=$('pgrid');
+  g.innerHTML='';pendList=items;pendI=0;
+  if(pickObs)pickObs.disconnect();
+  renderChunk();
+}
 function drawPick(){
   const q=$('psearch').value.trim().toLowerCase(),g=$('pgrid');
-  if(pfilter==='emoji'){g.innerHTML=EMOJI.map(e=>`<button class="pe" data-c="${e}">${e}</button>`).join('');return;}
+  if(pfilter==='emoji'){
+    startList(EMOJI.map(e=>({html:`<button class="pe" data-c="${e}">${e}</button>`})));return;}
   if(pfilter==='sub'){
     let l=[...SUB.entries()];
     if(q)l=l.filter(([k])=>k.toLowerCase().includes(q));
     if(!l.length){g.innerHTML='<div class="pmsg">'+esc(live?T('noChanEmote2'):T('connectFirst2'))+'</div>';return;}
     l.sort((a,b)=>a[1].tier-b[1].tier||a[0].localeCompare(b[0]));
-    g.innerHTML='<div class="pmsg" style="padding:6px 0">'+esc(T('pickHint',ch,myTier?T('subYes',myTier):T('subNo')))+'</div>'+
-      l.map(([k,v])=>{
-        const lock=myTier<v.tier;
-        const lbl=v.tier?T('tierN',v.tier):T('follower');
-        return `<button class="pe${lock?' lock':''}" data-c="${esc(k)}" data-lock="${lock?1:''}" data-tier="${esc(lbl)}"
-          title="${esc(k)} · ${lbl}"><img loading="lazy" src="${v.url}" alt="${esc(k)}"></button>`;
-      }).join('');
+    startList(l.map(([k,v])=>({html:peBtn(k,v,myTier<v.tier,v.tier?T('tierN',v.tier):T('follower'))})));
     return;
   }
-  let list=[...EMO.entries()];
-  if(pfilter!=='all')list=list.filter(([,v])=>v.src===pfilter);
+  if(pfilter==='mine'){
+    let l=[...MINE.entries()];
+    if(q)l=l.filter(([k])=>k.toLowerCase().includes(q));
+    if(!l.length){
+      g.innerHTML='<div class="pmsg">'+esc(mineErr==='scope'?T('needScope'):mineErr?T('mineFail'):T('mineNone'))+'</div>';return;}
+    l.sort((a,b)=>a[0].localeCompare(b[0]));
+    startList(l.map(([k,v])=>({html:peBtn(k,v,false,'')})));return;
+  }
+  let list = pfilter==='TW' ? [...TWG.entries()] : [...EMO.entries()];
+  if(pfilter!=='all'&&pfilter!=='TW')list=list.filter(([,v])=>v.src===pfilter);
   if(q)list=list.filter(([k])=>k.toLowerCase().includes(q));
   if(!list.length){g.innerHTML='<div class="pmsg">'+esc(EMO.size?T('noMatch'):T('connectFirst2'))+'</div>';return;}
   list.sort((a,b)=>a[0].localeCompare(b[0]));
-  const sh=list.slice(0,400);
-  g.innerHTML=sh.map(([k,v])=>`<button class="pe" data-c="${esc(k)}" title="${esc(k)} · ${v.src}"><img loading="lazy" src="${v.url}" alt="${esc(k)}"></button>`).join('')
-    +(list.length>sh.length?`<div class="pmsg">${esc(T('moreN',list.length-sh.length))}</div>`:'');
+  startList(list.map(([k,v])=>({html:peBtn(k,v,false,'')})));
 }
 $('pgrid').addEventListener('click',e=>{
   const b=e.target.closest('.pe');if(!b)return;
