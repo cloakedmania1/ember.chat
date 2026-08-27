@@ -136,6 +136,7 @@ body.msn select{background:#fff;border:1px solid #7f9db9;color:#000;border-radiu
 body.msn #fontPrev{background:#fff;border:1px solid #7f9db9;border-radius:2px}
 #fontPrev b{color:var(--ember2)}
 .sw button{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+#nickCols button{width:22px;height:22px;border:1px solid rgba(0,0,0,.25)}
 .sw button[aria-pressed="true"]{border-color:var(--txt)}
 .sw input[type=color]{width:28px;height:28px;padding:0;border:1px solid var(--line);border-radius:50%;
   background:none;cursor:pointer;overflow:hidden}
@@ -597,6 +598,17 @@ body.msn .ec-img{background:repeating-conic-gradient(#0000000d 0 25%,transparent
       <span id="tokstat" data-t="notVerified">Henüz doğrulanmadı.</span>
     </div>
         <div class="field">
+      <div class="lrow"><label data-t="lblChat">Sohbet ayarları</label>
+        <button class="qm" data-help="chat">?</button></div>
+      <div class="sw" id="nickCols"></div>
+      <div class="drow" style="margin-top:6px">
+        <input id="nickHex" type="color" value="#ff9a2e" title="Prime/Turbo">
+        <button class="mini key" id="applyCol" data-t="applyCol">Rengi uygula</button>
+        <span id="colStat" class="hint" style="flex:1 1 100px;margin:0"></span>
+      </div>
+    </div>
+
+    <div class="field">
       <label data-t="lblLang">Dil / Language</label>
       <div class="drow"><button class="mini" data-lang="tr">Türkçe</button>
         <button class="mini" data-lang="en">English</button>
@@ -804,7 +816,11 @@ const I18N={tr:{
  leftChan:'Ayrıldın.',connOff:'Bağlantı kapalı.',cleared:'Sohbet temizlendi.',
  chatEmpty:'Sohbet zaten boş',anonHint:'Anonim moddasın — yazmak için ⚙ Ayarlar\'dan token ekle',
  sayTo:'#{0} sohbetine yaz',startHint:'Kanal adı yaz ve Bağlan\'a bas. 📇 Kanallar\'dan kayıtlılara geçebilirsin.',
- badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',fTwitch:'Twitch',fMine:'Kazanılmış',needScope:'Bu liste için token\'a user:read:emotes izni eklemen gerekiyor.',mineFail:'Emote listen alınamadı.',mineNone:'Kazanılmış emote bulunamadı.',subUnlocked:'Tier {0} abonesin — {1} emote açık',subNone:'abone değilsin — kanal emoteleri kilitli',
+ badgeInfo:'rozet: global {0} · kanal {1}',badgeFail:'rozetler alınamadı',lblChat:'Sohbet ayarları',applyCol:'Rengi uygula',
+ needToken:'Önce token gerekiyor.',sending:'gönderiliyor…',colorOk:'✓ İsim rengin değişti',
+ needColorScope:'Token\'a user:manage:chat_color izni eklemen gerekiyor.',
+ colorPrime:'Özel renk yalnızca Prime/Turbo hesaplarda; listeden bir renk seç.',
+ colorFail:'Renk değiştirilemedi ({0})',fTwitch:'Twitch',fMine:'Kazanılmış',needScope:'Bu liste için token\'a user:read:emotes izni eklemen gerekiyor.',mineFail:'Emote listen alınamadı.',mineNone:'Kazanılmış emote bulunamadı.',subUnlocked:'Tier {0} abonesin — {1} emote açık',subNone:'abone değilsin — kanal emoteleri kilitli',
  chanEmotes:'{0} kanal emotesi{1}',subTier:' · Tier {0} abonesin',notSub:' · abone değilsin',
  noChanEmotes:'bu kanalın özel emotesi yok',emotesFail:'kanal emoteleri alınamadı',
  tokenNeeded:'kanal emoteleri için ⚙ Ayarlar\'dan token gerekiyor',idFail:'kanal kimliği çözülemedi',
@@ -863,7 +879,11 @@ const I18N={tr:{
  leftChan:'Left the channel.',connOff:'Disconnected.',cleared:'Chat cleared.',
  chatEmpty:'Chat is already empty',anonHint:'Anonymous mode — add a token in ⚙ Settings to type',
  sayTo:'Message #{0}',startHint:'Type a channel and hit Connect. 📇 Channels switches between saved ones.',
- badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',fTwitch:'Twitch',fMine:'Unlocked',needScope:'This list needs the user:read:emotes scope on your token.',mineFail:'Could not load your emotes.',mineNone:'No unlocked emotes found.',subUnlocked:'Tier {0} sub — {1} emotes unlocked',subNone:'not subscribed — channel emotes are locked',
+ badgeInfo:'badges: global {0} · channel {1}',badgeFail:'could not load badges',lblChat:'Chat settings',applyCol:'Apply colour',
+ needToken:'A token is required first.',sending:'sending…',colorOk:'✓ Your name colour changed',
+ needColorScope:'Add the user:manage:chat_color scope to your token.',
+ colorPrime:'Custom colours need Prime/Turbo; pick one from the list.',
+ colorFail:'Could not change colour ({0})',fTwitch:'Twitch',fMine:'Unlocked',needScope:'This list needs the user:read:emotes scope on your token.',mineFail:'Could not load your emotes.',mineNone:'No unlocked emotes found.',subUnlocked:'Tier {0} sub — {1} emotes unlocked',subNone:'not subscribed — channel emotes are locked',
  chanEmotes:'{0} channel emotes{1}',subTier:' · you are Tier {0}',notSub:' · not subscribed',
  noChanEmotes:'this channel has no custom emotes',emotesFail:'could not load channel emotes',
  tokenNeeded:'channel emotes need a token — see ⚙ Settings',idFail:'could not resolve channel id',
@@ -903,12 +923,14 @@ function T(k,...a){
   return s;
 }
 const HELP={tr:{
- token:'<b>Token nedir?</b><br>Twitch\'in sana verdiği anahtar; uygulama onunla senin adına sohbete bağlanır. <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a> adresinden alabilirsin. <br><br><b>İzinler</b><br>• <b>chat:read</b> — sohbeti okumak<br>• <b>chat:edit</b> — mesaj yazmak<br>• <b>user:read:emotes</b> — <i>Kazanılmış</i> sekmesi: hype train, bits ve tüm abonelik emotelerin<br><br>İlk ikisi zorunlu, üçüncüsü isteğe bağlı. <b>Doğrula</b>\'ya basınca hesap Twitch\'e sorulur, kullanıcı adın kendiliğinden dolar ve eksik izin varsa söylenir.<br><br><b>Token neyi açar?</b><br>Kanalın abone emoteleri, rozetler ve Twitch global emoteleri yalnızca token varken gelir — Twitch bunları tokensiz vermiyor. BTTV, 7TV, FFZ emoteleri ve sohbeti okumak tokensiz de çalışır.<br><br>Token yalnızca bu tarayıcıda saklanır, hiçbir sunucuya gönderilmez. İstediğin an Twitch ayarlarından iptal edebilirsin.',
+ token:'<b>Token nedir?</b><br>Twitch\'in sana verdiği anahtar; uygulama onunla senin adına sohbete bağlanır. <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a> adresinden alabilirsin. <br><br><b>İzinler</b><br>• <b>chat:read</b> — sohbeti okumak<br>• <b>chat:edit</b> — mesaj yazmak<br>• <b>user:read:emotes</b> — <i>Kazanılmış</i> sekmesi: hype train, bits ve tüm abonelik emotelerin<br>• <b>user:manage:chat_color</b> — isim rengini buradan değiştirmek<br><br>İlk ikisi zorunlu, üçüncüsü isteğe bağlı. <b>Doğrula</b>\'ya basınca hesap Twitch\'e sorulur, kullanıcı adın kendiliğinden dolar ve eksik izin varsa söylenir.<br><br><b>Token neyi açar?</b><br>Kanalın abone emoteleri, rozetler ve Twitch global emoteleri yalnızca token varken gelir — Twitch bunları tokensiz vermiyor. BTTV, 7TV, FFZ emoteleri ve sohbeti okumak tokensiz de çalışır.<br><br>Token yalnızca bu tarayıcıda saklanır, hiçbir sunucuya gönderilmez. İstediğin an Twitch ayarlarından iptal edebilirsin.',
+ chat:'<b>Sohbet ayarları</b><br>Buradan Twitch\'teki <b>isim rengini</b> değiştirebilirsin. Hazır 15 renk her hesapta çalışır; sağdaki kutuyla seçtiğin özel renk yalnızca <b>Prime/Turbo</b> aboneliğinde geçerli. Bunun için token\'a <b>user:manage:chat_color</b> izni gerekiyor.<br><br><b>Rozetler</b><br>Hangi rozetini göstereceğini Twitch API üzerinden değiştirmek mümkün değil — Twitch bunun için bir uç sunmuyor. Rozet seçimi Twitch\'in kendi sohbet ayarlarından yapılıyor; oradan değiştirdiğinde burada da anında görünür.',
  nudge:'<b>Dürtme</b><br>Biri sana <b>@</b> ile yazdığında MSN\'in dürtme sesi çalar ve pencere sarsılır. İkisini ayrı ayrı kapatabilirsin. Normal mesajlarda klasik bildirim sesi kullanılır.',
  fsadj:'<b>Klavye düzeltmesi</b><br>Tam ekranda pencere klavyeye kadar inmiyorsa buradan artır. HTTPS üzerinden (GitHub Pages, ana ekrana eklenmiş uygulama) açtığında gerekmez — tarayıcı klavye boyunu doğru bildirir.',
  font:'<b>Yazı tipi</b><br>W95FA, Windows 95 arayüz fontunun açık kopyasıdır ve dosyanın içine gömülüdür, internet istemez. Yalnız fontta <b>ğ ş ı</b> harfleri yok; o harfler otomatik olarak yedek fonta düşer.'
 },en:{
- token:'<b>What is a token?</b><br>A key Twitch gives you so the app can join chat as you. Get one at <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a>.<br><br><b>Scopes</b><br>• <b>chat:read</b> — read chat<br>• <b>chat:edit</b> — send messages<br>• <b>user:read:emotes</b> — the <i>Unlocked</i> tab: hype train, bits and every sub emote you own<br><br>The first two are required, the third is optional. <b>Verify</b> asks Twitch, fills your username automatically and tells you if a scope is missing.<br><br><b>What does the token unlock?</b><br>Channel sub emotes, badges and Twitch global emotes only load with a token — Twitch does not serve them anonymously. BTTV, 7TV, FFZ emotes and reading chat work without one.<br><br>The token is stored only in this browser and never sent to any server. You can revoke it any time from your Twitch settings.',
+ token:'<b>What is a token?</b><br>A key Twitch gives you so the app can join chat as you. Get one at <a href="https://twitchtokengenerator.com" target="_blank" rel="noopener">twitchtokengenerator.com</a>.<br><br><b>Scopes</b><br>• <b>chat:read</b> — read chat<br>• <b>chat:edit</b> — send messages<br>• <b>user:read:emotes</b> — the <i>Unlocked</i> tab: hype train, bits and every sub emote you own<br>• <b>user:manage:chat_color</b> — change your name colour from here<br><br>The first two are required, the third is optional. <b>Verify</b> asks Twitch, fills your username automatically and tells you if a scope is missing.<br><br><b>What does the token unlock?</b><br>Channel sub emotes, badges and Twitch global emotes only load with a token — Twitch does not serve them anonymously. BTTV, 7TV, FFZ emotes and reading chat work without one.<br><br>The token is stored only in this browser and never sent to any server. You can revoke it any time from your Twitch settings.',
+ chat:'<b>Chat settings</b><br>Change your Twitch <b>name colour</b> here. The 15 preset colours work on any account; the custom picker on the right only applies to <b>Prime/Turbo</b> accounts. This needs the <b>user:manage:chat_color</b> scope on your token.<br><br><b>Badges</b><br>Choosing which badge you display is not possible through the Twitch API — there is no endpoint for it. You pick badges in Twitch\'s own chat settings; once changed there it shows up here immediately.',
  nudge:'<b>Nudge</b><br>When someone mentions you with <b>@</b>, the MSN nudge sound plays and the window shakes. Both can be turned off separately. Regular notifications use the classic message sound.',
  fsadj:'<b>Keyboard offset</b><br>If the window does not reach down to the keyboard in fullscreen, raise this. Not needed over HTTPS (GitHub Pages, or installed to the home screen) — the browser reports the keyboard size correctly there.',
  font:'<b>Fonts</b><br>W95FA is an open recreation of the Windows 95 UI font, embedded in the file so it works offline. System fonts (Tahoma, Verdana, Trebuchet) look right on Windows but fall back to the device font on Android; the web fonts render the same everywhere.'
@@ -922,7 +944,7 @@ function applyLang(l,quiet){
   document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('key',b.dataset.lang===lang));
   $('savehint').textContent=store.ok?T('storeOk'):T('storeNo');
   setNotify(notifyMode,true);setSound(soundOn,true);setNudge(nudgeSound,nudgeShake,true);
-  drawChans();subTabLabel();statusLine();rollPreview();fillFontSel();
+  drawChans();subTabLabel();statusLine();rollPreview();fillFontSel();drawNickCols();
   if($('go'))$('go').textContent=live?T('leave'):T('connect');
   if(say)say.placeholder=live?(me?T('sayTo',ch):T('anonHint')):T('phSay');
   store.set({lang});
@@ -1319,7 +1341,7 @@ function build(text,tag){
   }
   return{html,jumbo:ec>0&&ec<=3&&tc===0};
 }
-function render(m){
+function render(m,own){
   const t=m.tags;let text=trail(m.args),action=false;
   if(text.startsWith('\u0001ACTION')){action=true;text=text.slice(8,-1);}
   const nick=t['display-name']||m.nick;
@@ -1340,7 +1362,7 @@ function render(m){
     +`<span class="body"${action?' data-raw="'+esc(raw)+'" style="color:'+esc(color)+'"':''}>${html}</span>`;
   push(d);
   rate.push(Date.now());
-  alertFor(nick,text,mention);
+  if(!own)alertFor(nick,text,mention);
 }
 const NOTE=()=>({sub:T('hSub'),resub:T('hResub'),subgift:T('hGift'),
   submysterygift:T('hMysteryGift'),raid:T('hRaid'),announcement:T('hAnn')});
@@ -1677,6 +1699,32 @@ fillFontSel();
 $('fontSel').addEventListener('change',e=>setFont(e.target.value));
 $('fontSize').addEventListener('change',e=>setFsize(e.target.value));
 
+/* ── sohbet ayarları (isim rengi) ───────── */
+const TW_COLORS=['Blue','BlueViolet','CadetBlue','Chocolate','Coral','DodgerBlue','Firebrick',
+  'GoldenRod','Green','HotPink','OrangeRed','Red','SeaGreen','SpringGreen','YellowGreen'];
+const TW_HEX={Blue:'#0000FF',BlueViolet:'#8A2BE2',CadetBlue:'#5F9EA0',Chocolate:'#D2691E',Coral:'#FF7F50',
+  DodgerBlue:'#1E90FF',Firebrick:'#B22222',GoldenRod:'#DAA520',Green:'#008000',HotPink:'#FF69B4',
+  OrangeRed:'#FF4500',Red:'#FF0000',SeaGreen:'#2E8B57',SpringGreen:'#00FF7F',YellowGreen:'#9ACD32'};
+function drawNickCols(){
+  $('nickCols').innerHTML=TW_COLORS.map(c=>
+    `<button data-col="${c}" title="${c}" style="background:${TW_HEX[c]}"></button>`).join('');
+}
+async function setNickColor(v){
+  const st=$('colStat');st.style.color='';
+  if(!(await ensureHelix())||!myId){st.textContent=T('needToken');return;}
+  st.textContent=T('sending');
+  try{
+    const r=await fetch('https://api.twitch.tv/helix/chat/color?user_id='+myId+'&color='+encodeURIComponent(v),
+      {method:'PUT',headers:{'Client-Id':clientId,'Authorization':'Bearer '+tokRaw}});
+    if(r.status===204){st.textContent=T('colorOk');myColor=TW_HEX[v]||v;return;}
+    if(r.status===401||r.status===403){st.textContent=T('needColorScope');return;}
+    if(r.status===400){st.textContent=T('colorPrime');return;}
+    st.textContent=T('colorFail',r.status);
+  }catch(e){st.textContent=T('colorFail','net');}
+}
+$('nickCols').addEventListener('click',e=>{const b=e.target.closest('[data-col]');if(b)setNickColor(b.dataset.col);});
+$('applyCol').onclick=()=>setNickColor($('nickHex').value);
+
 /* ── token doğrulama ────────────────────── */
 $('verify').onclick=async()=>{
   const raw=$('tok').value.trim().replace(/^oauth:/,''),st=$('tokstat');st.className='';
@@ -1829,7 +1877,7 @@ say.addEventListener('keydown',e=>{
 function send(){
   const v=say.value.trim();if(!v||!ws||!live||!me)return;
   ws.send('PRIVMSG #'+ch+' :'+v);
-  render({tags:{'display-name':me,color:myColor,badges:''},nick:me,args:'#'+ch+' :'+v});
+  render({tags:{'display-name':me,color:myColor,badges:myBadgeTag||''},nick:me,args:'#'+ch+' :'+v},true);
   say.value='';ac.classList.remove('open');acList=[];
 }
 $('emobtn').onclick=()=>$('pick').classList.contains('open')?closePick():openPick();
