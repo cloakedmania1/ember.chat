@@ -1401,40 +1401,54 @@ function modes(t){
 /* ── bildirim + ses ─────────────────────── */
 const snd=$('snd'),sndN=$('sndN');let lastAlert=0,actx=null,abuf=null,abufN=null,audioReady=false;
 async function initAudio(){
-  if(audioReady)return true;
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!actx&&AC)actx=new AC();
     if(actx){
-      if(actx.state==='suspended')await actx.resume();
-      const dec=async el=>{
-        const b=await fetch(el.src).then(r=>r.arrayBuffer());
-        return await new Promise((res,rej)=>{const p=actx.decodeAudioData(b,res,rej);if(p&&p.then)p.then(res,rej);});
-      };
-      if(!abuf)abuf=await dec(snd);
-      if(!abufN){try{abufN=await dec(sndN);}catch(e){}}
-      if(actx.state==='running'){audioReady=true;return true;}
+      if(actx.state!=='running'){try{await actx.resume();}catch(e){}}
+      if(!abuf||!abufN){
+        const dec=async el=>{
+          const b=await fetch(el.src).then(r=>r.arrayBuffer());
+          return await new Promise((res,rej)=>{const p=actx.decodeAudioData(b,res,rej);if(p&&p.then)p.then(res,rej);});
+        };
+        if(!abuf){try{abuf=await dec(snd);}catch(e){}}
+        if(!abufN){try{abufN=await dec(sndN);}catch(e){}}
+      }
+      if(actx.state==='running'&&abuf){audioReady=true;return true;}
     }
   }catch(e){}
   try{snd.muted=true;await snd.play();snd.pause();snd.currentTime=0;snd.muted=false;snd.volume=.6;
-    audioReady=true;return true;}catch(e){}
+    sndN.volume=.75;audioReady=true;return true;}catch(e){}
   return false;
 }
-['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{initAudio();},{passive:true}));
+['pointerdown','keydown','touchstart','click'].forEach(ev=>addEventListener(ev,()=>{
+  if(!audioReady||(actx&&actx.state!=='running'))initAudio();
+},{passive:true}));
 function ding(kind){
   if(!soundOn)return;
   const useN = kind==='nudge' && nudgeSound;
   const buf = useN ? (abufN||abuf) : abuf;
-  const el  = useN ? ((abufN||sndN.src)?sndN:snd) : snd;
-  if(actx&&buf&&actx.state==='running'){
-    const s=actx.createBufferSource(),g=actx.createGain();
-    s.buffer=buf;g.gain.value=useN?.85:.7;s.connect(g);g.connect(actx.destination);s.start(0);return;
+  const play=()=>{
+    if(actx&&buf&&actx.state==='running'){
+      const s=actx.createBufferSource(),g=actx.createGain();
+      s.buffer=buf;g.gain.value=useN?.85:.7;s.connect(g);g.connect(actx.destination);s.start(0);return true;
+    }
+    return false;
+  };
+  if(play())return;
+  // bağlam askıdaysa uyandırıp tekrar dene, olmazsa <audio>'ya düş
+  if(actx&&actx.state!=='running'){
+    actx.resume().then(()=>{ if(!play()){const el=useN?sndN:snd;el.currentTime=0;const p=el.play();p&&p.catch(()=>{});} }).catch(()=>{});
+    return;
   }
+  const el=useN?sndN:snd;
   try{el.currentTime=0;const p=el.play();p&&p.catch(()=>{});}catch(e){}
 }
 $('sndTest')&&($('sndTest').onclick=async()=>{
-  const ok=await initAudio();ding();
-  toast(ok?T('sndWorks'):T('sndBlocked'));
+  const ok=await initAudio();
+  ding('msg');
+  const st=actx?actx.state:'yok';
+  toast(ok?T('sndWorks')+' ('+st+')':T('sndBlocked')+' ('+st+')');
 });
 function alertFor(nick,text,mention){
   if(notifyMode==='off')return;
